@@ -46,11 +46,11 @@ st.markdown("""
 def load_data():
     """Load all datasets with caching for performance"""
     try:
-        movies = pd.read_csv('data/processed/movies_processed.csv')
-        sales = pd.read_csv('data/processed/sales_processed.csv')
-        genre_stats = pd.read_csv('data/processed/genre_stats.csv')
-        studio_stats = pd.read_csv('data/processed/studio_stats.csv')
-        monthly_sales = pd.read_csv('data/processed/monthly_sales.csv')
+        movies = pd.read_csv('../data/processed/movies_processed.csv')
+        sales = pd.read_csv('../data/processed/sales_processed.csv')
+        genre_stats = pd.read_csv('../data/processed/genre_stats.csv')
+        studio_stats = pd.read_csv('../data/processed/studio_stats.csv')
+        monthly_sales = pd.read_csv('../data/processed/monthly_sales.csv')
         
         # Convert date columns
         movies['release_date'] = pd.to_datetime(movies['release_date'])
@@ -102,339 +102,306 @@ def main():
     )
     
     # Apply filters
-    filtered_movies = movies[\n",
-    "        (movies['release_date'] >= pd.Timestamp(date_range[0])) &\n",
-    "        (movies['release_date'] <= pd.Timestamp(date_range[1])) &\n",
-    "        (movies['genre'].isin(genres)) &\n",
-    "        (movies['budget'] >= budget_range[0] * 1_000_000) &\n",
-    "        (movies['budget'] <= budget_range[1] * 1_000_000)\n",
-    "    ]\n",
-    "    \n",
-    "    # Key Metrics Row\n",
-    "    col1, col2, col3, col4, col5 = st.columns(5)\n",
-    "    \n",
-    "    with col1:\n",
-    "        st.metric(\n",
-    "            label=\"Total Movies\",\n",
-    "            value=f\"{len(filtered_movies):,}\"\n",
-    "        )\n",
-    "    \n",
-    "    with col2:\n",
-    "        total_gross = filtered_movies['total_gross'].sum()\n",
-    "        st.metric(\n",
-    "            label=\"Total Box Office\",\n",
-    "            value=f\"${total_gross/1_000_000_000:.1f}B\"\n",
-    "        )\n",
-    "    \n",
-    "    with col3:\n",
-    "        avg_rating = filtered_movies['imdb_rating'].mean()\n",
-    "        st.metric(\n",
-    "            label=\"Avg IMDb Rating\",\n",
-    "            value=f\"{avg_rating:.1f}/10\"\n",
-    "        )\n",
-    "    \n",
-    "    with col4:\n",
-    "        profitable_pct = (len(filtered_movies[filtered_movies['profit'] > 0]) / len(filtered_movies)) * 100\n",
-    "        st.metric(\n",
-    "            label=\"Profitable Movies\",\n",
-    "            value=f\"{profitable_pct:.1f}%\"\n",
-    "        )\n",
-    "    \n",
-    "    with col5:\n",
-    "        avg_roi = filtered_movies['roi'].mean()\n",
-    "        st.metric(\n",
-    "            label=\"Average ROI\",\n",
-    "            value=f\"{avg_roi:.1f}%\"\n",
-    "        )\n",
-    "    \n",
-    "    st.markdown(\"---\")\n",
-    "    \n",
-    "    # Create tabs for different analyses\n",
-    "    tab1, tab2, tab3, tab4, tab5 = st.tabs([\"📊 Overview\", \"🎭 Genre Analysis\", \"🏢 Studio Performance\", \"📈 Trends\", \"🎫 Sales Data\"])\n",
-    "    \n",
-    "    with tab1:\n",
-    "        show_overview_tab(filtered_movies)\n",
-    "    \n",
-    "    with tab2:\n",
-    "        show_genre_analysis(filtered_movies, genre_stats)\n",
-    "    \n",
-    "    with tab3:\n",
-    "        show_studio_analysis(filtered_movies, studio_stats)\n",
-    "    \n",
-    "    with tab4:\n",
-    "        show_trends_analysis(filtered_movies, sales)\n",
-    "    \n",
-    "    with tab5:\n",
-    "        show_sales_analysis(sales)\n",
-    "\ndef show_overview_tab(movies):\n",
-    "    \"\"\"Overview tab with key visualizations\"\"\"\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        # Budget vs Gross scatter plot\n",
-    "        fig = px.scatter(\n",
-    "            movies,\n",
-    "            x='budget',\n",
-    "            y='total_gross',\n",
-    "            color='genre',\n",
-    "            size='imdb_rating',\n",
-    "            hover_data=['title', 'release_year'],\n",
-    "            title='Budget vs Total Gross Revenue'\n",
-    "        )\n",
-    "        fig.update_layout(height=500)\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        # ROI distribution\n",
-    "        fig = px.histogram(\n",
-    "            movies,\n",
-    "            x='roi',\n",
-    "            nbins=30,\n",
-    "            title='Return on Investment Distribution'\n",
-    "        )\n",
-    "        fig.add_vline(x=movies['roi'].median(), line_dash=\"dash\", \n",
-    "                     annotation_text=f\"Median: {movies['roi'].median():.1f}%\")\n",
-    "        fig.update_layout(height=500)\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    # Top performers table\n",
-    "    st.subheader(\"🏆 Top Performing Movies\")\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        st.write(\"**Top 10 by Total Gross**\")\n",
-    "        top_gross = movies.nlargest(10, 'total_gross')[['title', 'genre', 'total_gross', 'imdb_rating']]\n",
-    "        top_gross['total_gross'] = top_gross['total_gross'].apply(lambda x: f\"${x/1_000_000:.1f}M\")\n",
-    "        st.dataframe(top_gross, hide_index=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        st.write(\"**Top 10 by ROI**\")\n",
-    "        top_roi = movies.nlargest(10, 'roi')[['title', 'genre', 'roi', 'imdb_rating']]\n",
-    "        top_roi['roi'] = top_roi['roi'].apply(lambda x: f\"{x:.1f}%\")\n",
-    "        st.dataframe(top_roi, hide_index=True)\n",
-    "\ndef show_genre_analysis(movies, genre_stats):\n",
-    "    \"\"\"Genre analysis tab\"\"\"\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        # Genre distribution pie chart\n",
-    "        genre_counts = movies['genre'].value_counts()\n",
-    "        fig = px.pie(\n",
-    "            values=genre_counts.values,\n",
-    "            names=genre_counts.index,\n",
-    "            title='Movie Distribution by Genre'\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        # Average gross by genre\n",
-    "        genre_gross = movies.groupby('genre')['total_gross'].mean().sort_values(ascending=True)\n",
-    "        fig = px.bar(\n",
-    "            x=genre_gross.values,\n",
-    "            y=genre_gross.index,\n",
-    "            orientation='h',\n",
-    "            title='Average Gross Revenue by Genre'\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    # Genre performance metrics\n",
-    "    st.subheader(\"📊 Genre Performance Metrics\")\n",
-    "    \n",
-    "    # Create genre performance summary\n",
-    "    genre_summary = movies.groupby('genre').agg({\n",
-    "        'movie_id': 'count',\n",
-    "        'total_gross': ['mean', 'sum'],\n",
-    "        'budget': 'mean',\n",
-    "        'imdb_rating': 'mean',\n",
-    "        'roi': 'mean',\n",
-    "        'profit': 'mean'\n",
-    "    }).round(2)\n",
-    "    \n",
-    "    genre_summary.columns = ['Count', 'Avg Gross', 'Total Gross', 'Avg Budget', 'Avg Rating', 'Avg ROI', 'Avg Profit']\n",
-    "    genre_summary = genre_summary.reset_index()\n",
-    "    \n",
-    "    # Format currency columns\n",
-    "    for col in ['Avg Gross', 'Total Gross', 'Avg Budget', 'Avg Profit']:\n",
-    "        genre_summary[col] = genre_summary[col].apply(lambda x: f\"${x/1_000_000:.1f}M\")\n",
-    "    \n",
-    "    genre_summary['Avg ROI'] = genre_summary['Avg ROI'].apply(lambda x: f\"{x:.1f}%\")\n",
-    "    genre_summary['Avg Rating'] = genre_summary['Avg Rating'].apply(lambda x: f\"{x:.1f}/10\")\n",
-    "    \n",
-    "    st.dataframe(genre_summary, hide_index=True)\n",
-    "\ndef show_studio_analysis(movies, studio_stats):\n",
-    "    \"\"\"Studio analysis tab\"\"\"\n",
-    "    \n",
-    "    # Top studios by total gross\n",
-    "    top_studios = movies.groupby('studio')['total_gross'].sum().nlargest(10)\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        fig = px.bar(\n",
-    "            x=top_studios.index,\n",
-    "            y=top_studios.values,\n",
-    "            title='Top 10 Studios by Total Gross Revenue'\n",
-    "        )\n",
-    "        fig.update_xaxes(tickangle=45)\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        # Studio performance scatter\n",
-    "        studio_perf = movies.groupby('studio').agg({\n",
-    "            'movie_id': 'count',\n",
-    "            'total_gross': 'mean',\n",
-    "            'imdb_rating': 'mean'\n",
-    "        }).reset_index()\n",
-    "        \n",
-    "        fig = px.scatter(\n",
-    "            studio_perf,\n",
-    "            x='movie_id',\n",
-    "            y='total_gross',\n",
-    "            color='imdb_rating',\n",
-    "            size='total_gross',\n",
-    "            hover_data=['studio'],\n",
-    "            title='Studio Performance: Movies vs Average Gross',\n",
-    "            labels={'movie_id': 'Number of Movies', 'total_gross': 'Average Gross'}\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    # Studio performance table\n",
-    "    st.subheader(\"🏢 Studio Performance Summary\")\n",
-    "    \n",
-    "    studio_summary = movies.groupby('studio').agg({\n",
-    "        'movie_id': 'count',\n",
-    "        'total_gross': ['mean', 'sum'],\n",
-    "        'budget': 'mean',\n",
-    "        'imdb_rating': 'mean',\n",
-    "        'roi': 'mean'\n",
-    "    }).round(2)\n",
-    "    \n",
-    "    studio_summary.columns = ['Movies', 'Avg Gross', 'Total Gross', 'Avg Budget', 'Avg Rating', 'Avg ROI']\n",
-    "    studio_summary = studio_summary.reset_index().sort_values('Total Gross', ascending=False)\n",
-    "    \n",
-    "    # Format columns\n",
-    "    for col in ['Avg Gross', 'Total Gross', 'Avg Budget']:\n",
-    "        studio_summary[col] = studio_summary[col].apply(lambda x: f\"${x/1_000_000:.1f}M\")\n",
-    "    \n",
-    "    studio_summary['Avg ROI'] = studio_summary['Avg ROI'].apply(lambda x: f\"{x:.1f}%\")\n",
-    "    studio_summary['Avg Rating'] = studio_summary['Avg Rating'].apply(lambda x: f\"{x:.1f}/10\")\n",
-    "    \n",
-    "    st.dataframe(studio_summary, hide_index=True)\n",
-    "\ndef show_trends_analysis(movies, sales):\n",
-    "    \"\"\"Trends analysis tab\"\"\"\n",
-    "    \n",
-    "    # Release trends over time\n",
-    "    release_trends = movies.groupby('release_year').agg({\n",
-    "        'movie_id': 'count',\n",
-    "        'total_gross': 'mean',\n",
-    "        'budget': 'mean',\n",
-    "        'imdb_rating': 'mean'\n",
-    "    }).reset_index()\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        # Movies per year\n",
-    "        fig = px.line(\n",
-    "            release_trends,\n",
-    "            x='release_year',\n",
-    "            y='movie_id',\n",
-    "            title='Number of Movies Released per Year',\n",
-    "            markers=True\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        # Average gross per year\n",
-    "        fig = px.line(\n",
-    "            release_trends,\n",
-    "            x='release_year',\n",
-    "            y='total_gross',\n",
-    "            title='Average Gross Revenue per Year',\n",
-    "            markers=True\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    # Budget vs ratings over time\n",
-    "    fig = px.scatter(\n",
-    "        movies,\n",
-    "        x='release_year',\n",
-    "        y='imdb_rating',\n",
-    "        size='budget',\n",
-    "        color='genre',\n",
-    "        title='Movie Ratings vs Release Year (Size = Budget)'\n",
-    "    )\n",
-    "    st.plotly_chart(fig, use_container_width=True)\n",
-    "\ndef show_sales_analysis(sales):\n",
-    "    \"\"\"Sales analysis tab\"\"\"\n",
-    "    \n",
-    "    # Daily sales trends\n",
-    "    daily_sales = sales.groupby('date').agg({\n",
-    "        'tickets_sold': 'sum',\n",
-    "        'revenue': 'sum'\n",
-    "    }).reset_index()\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        fig = px.line(\n",
-    "            daily_sales,\n",
-    "            x='date',\n",
-    "            y='tickets_sold',\n",
-    "            title='Daily Ticket Sales Over Time'\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        fig = px.line(\n",
-    "            daily_sales,\n",
-    "            x='date',\n",
-    "            y='revenue',\n",
-    "            title='Daily Revenue Over Time'\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    # Weekend vs weekday analysis\n",
-    "    weekend_analysis = sales.groupby('is_weekend').agg({\n",
-    "        'tickets_sold': 'mean',\n",
-    "        'revenue': 'mean'\n",
-    "    }).reset_index()\n",
-    "    weekend_analysis['day_type'] = weekend_analysis['is_weekend'].map({True: 'Weekend', False: 'Weekday'})\n",
-    "    \n",
-    "    col1, col2 = st.columns(2)\n",
-    "    \n",
-    "    with col1:\n",
-    "        fig = px.bar(\n",
-    "            weekend_analysis,\n",
-    "            x='day_type',\n",
-    "            y='tickets_sold',\n",
-    "            title='Average Tickets Sold: Weekend vs Weekday'\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    with col2:\n",
-    "        fig = px.bar(\n",
-    "            weekend_analysis,\n",
-    "            x='day_type',\n",
-    "            y='revenue',\n",
-    "            title='Average Revenue: Weekend vs Weekday'\n",
-    "        )\n",
-    "        st.plotly_chart(fig, use_container_width=True)\n",
-    "    \n",
-    "    # Top movies by sales\n",
-    "    st.subheader(\"🎬 Top Movies by Ticket Sales\")\n",
-    "    top_sales = sales.groupby('movie_title')['tickets_sold'].sum().nlargest(15).reset_index()\n",
-    "    \n",
-    "    fig = px.bar(\n",
-    "        top_sales,\n",
-    "        x='tickets_sold',\n",
-    "        y='movie_title',\n",
-    "        orientation='h',\n",
-    "        title='Top 15 Movies by Total Ticket Sales'\n",
-    "    )\n",
-    "    st.plotly_chart(fig, use_container_width=True)\n",
-    "\nif __name__ == \"__main__\":\n",
-    "    main()
+    filtered_movies = movies[
+        (movies['release_date'] >= pd.Timestamp(date_range[0])) &
+        (movies['release_date'] <= pd.Timestamp(date_range[1])) &
+        (movies['genre'].isin(genres)) &
+        (movies['budget'] >= budget_range[0] * 1_000_000) &
+        (movies['budget'] <= budget_range[1] * 1_000_000)
+    ]
+    
+    # Key Metrics Row
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.metric(
+            label="Total Movies",
+            value=f"{len(filtered_movies):,}"
+        )
+    
+    with col2:
+        total_gross = filtered_movies['total_gross'].sum()
+        st.metric(
+            label="Total Box Office",
+            value=f"${total_gross/1_000_000_000:.1f}B"
+        )
+    
+    with col3:
+        avg_rating = filtered_movies['imdb_rating'].mean()
+        st.metric(
+            label="Avg IMDb Rating",
+            value=f"{avg_rating:.1f}/10"
+        )
+    
+    with col4:
+        profitable_pct = (len(filtered_movies[filtered_movies['profit'] > 0]) / len(filtered_movies)) * 100
+        st.metric(
+            label="Profitable Movies",
+            value=f"{profitable_pct:.1f}%"
+        )
+    
+    with col5:
+        avg_roi = filtered_movies['roi'].mean()
+        st.metric(
+            label="Average ROI",
+            value=f"{avg_roi:.1f}%"
+        )
+    
+    st.markdown("---")
+    
+    # Create tabs for different analyses
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Overview", "🎭 Genre Analysis", "🏢 Studio Performance", "📈 Trends", "🎫 Sales Data"])
+    
+    with tab1:
+        show_overview_tab(filtered_movies)
+    
+    with tab2:
+        show_genre_analysis(filtered_movies, genre_stats)
+    
+    with tab3:
+        show_studio_analysis(filtered_movies, studio_stats)
+    
+    with tab4:
+        show_trends_analysis(filtered_movies, sales)
+    
+    with tab5:
+        show_sales_analysis(sales)
+
+def show_overview_tab(movies):
+    """Overview tab with key visualizations"""
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Budget vs Gross scatter plot
+        fig = px.scatter(
+            movies,
+            x='budget',
+            y='total_gross',
+            color='genre',
+            size='imdb_rating',
+            hover_data=['title', 'release_year'],
+            title='Budget vs Total Gross Revenue'
+        )
+        fig.update_layout(height=500)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # ROI distribution
+        fig = px.histogram(
+            movies,
+            x='roi',
+            nbins=30,
+            title='Return on Investment Distribution'
+        )
+        fig.add_vline(x=movies['roi'].median(), line_dash="dash", 
+                     annotation_text=f"Median: {movies['roi'].median():.1f}%")
+        fig.update_layout(height=500)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Top performers table
+    st.subheader("🏆 Top Performing Movies")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Top 10 by Total Gross**")
+        top_gross = movies.nlargest(10, 'total_gross')[['title', 'genre', 'total_gross', 'imdb_rating']]
+        top_gross['total_gross'] = top_gross['total_gross'].apply(lambda x: f"${x/1_000_000:.1f}M")
+        st.dataframe(top_gross, hide_index=True)
+    
+    with col2:
+        st.write("**Top 10 by ROI**")
+        top_roi = movies.nlargest(10, 'roi')[['title', 'genre', 'roi', 'budget']]
+        top_roi['roi'] = top_roi['roi'].apply(lambda x: f"{x:.1f}%")
+        top_roi['budget'] = top_roi['budget'].apply(lambda x: f"${x/1_000_000:.1f}M")
+        st.dataframe(top_roi, hide_index=True)
+
+def show_genre_analysis(movies, genre_stats):
+    """Genre analysis tab"""
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Genre distribution
+        genre_counts = movies['genre'].value_counts()
+        fig = px.pie(
+            values=genre_counts.values,
+            names=genre_counts.index,
+            title='Movie Distribution by Genre'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Average revenue by genre
+        genre_performance = movies.groupby('genre').agg({
+            'total_gross': 'mean',
+            'imdb_rating': 'mean'
+        }).reset_index()
+        
+        fig = px.bar(
+            genre_performance,
+            x='genre',
+            y='total_gross',
+            title='Average Revenue by Genre'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Detailed genre statistics
+    st.subheader("📊 Detailed Genre Statistics")
+    st.dataframe(genre_stats, hide_index=True)
+
+def show_studio_analysis(movies, studio_stats):
+    """Studio analysis tab"""
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Top studios by total revenue
+        studio_revenue = movies.groupby('studio')['total_gross'].sum().nlargest(15)
+        fig = px.bar(
+            x=studio_revenue.values,
+            y=studio_revenue.index,
+            orientation='h',
+            title='Top 15 Studios by Total Revenue'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Studio performance scatter
+        studio_performance = movies.groupby('studio').agg({
+            'movie_id': 'count',
+            'total_gross': 'mean'
+        }).reset_index()
+        
+        fig = px.scatter(
+            studio_performance,
+            x='movie_id',
+            y='total_gross',
+            size='total_gross',
+            hover_data=['studio'],
+            title='Studio Performance: Movies Count vs Average Revenue'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Studio statistics table
+    st.subheader("🏢 Studio Performance Statistics")
+    st.dataframe(studio_stats, hide_index=True)
+
+def show_trends_analysis(movies, sales):
+    """Trends analysis tab"""
+    
+    # Extract year from release date
+    movies['release_year'] = movies['release_date'].dt.year
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Movies released per year
+        release_trends = movies.groupby('release_year').agg({
+            'movie_id': 'count',
+            'total_gross': 'mean'
+        }).reset_index()
+        
+        fig = px.line(
+            release_trends,
+            x='release_year',
+            y='movie_id',
+            title='Number of Movies Released per Year',
+            markers=True
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        # Average gross per year
+        fig = px.line(
+            release_trends,
+            x='release_year',
+            y='total_gross',
+            title='Average Gross Revenue per Year',
+            markers=True
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Budget vs ratings over time
+    fig = px.scatter(
+        movies,
+        x='release_year',
+        y='imdb_rating',
+        size='budget',
+        color='genre',
+        title='Movie Ratings vs Release Year (Size = Budget)'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+def show_sales_analysis(sales):
+    """Sales analysis tab"""
+    
+    # Daily sales trends
+    daily_sales = sales.groupby('date').agg({
+        'tickets_sold': 'sum',
+        'revenue': 'sum'
+    }).reset_index()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        fig = px.line(
+            daily_sales,
+            x='date',
+            y='tickets_sold',
+            title='Daily Ticket Sales Over Time'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        fig = px.line(
+            daily_sales,
+            x='date',
+            y='revenue',
+            title='Daily Revenue Over Time'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Weekend vs weekday analysis
+    weekend_analysis = sales.groupby('is_weekend').agg({
+        'tickets_sold': 'mean',
+        'revenue': 'mean'
+    }).reset_index()
+    weekend_analysis['day_type'] = weekend_analysis['is_weekend'].map({True: 'Weekend', False: 'Weekday'})
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        fig = px.bar(
+            weekend_analysis,
+            x='day_type',
+            y='tickets_sold',
+            title='Average Tickets Sold: Weekend vs Weekday'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        fig = px.bar(
+            weekend_analysis,
+            x='day_type',
+            y='revenue',
+            title='Average Revenue: Weekend vs Weekday'
+        )
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # Top movies by sales
+    st.subheader("🎬 Top Movies by Ticket Sales")
+    top_sales = sales.groupby('movie_title')['tickets_sold'].sum().nlargest(15).reset_index()
+    
+    fig = px.bar(
+        top_sales,
+        x='tickets_sold',
+        y='movie_title',
+        orientation='h',
+        title='Top 15 Movies by Total Ticket Sales'
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+if __name__ == "__main__":
+    main()

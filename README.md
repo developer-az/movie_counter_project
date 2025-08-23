@@ -65,9 +65,20 @@ movie_counter_project/
 
 ## 🚀 Quick Start
 
+### ⚡ Quick Setup Checklist
+- [ ] Install system dependencies (`python3-full`, `python3-venv`)
+- [ ] Install Python packages (`pip install --break-system-packages -r requirements.txt`)
+- [ ] Generate data (`python3 scripts/generate_data.py`)
+- [ ] Process data (`python3 scripts/data_processing.py`)
+- [ ] Run tests (`python3 tests/test_basic.py`)
+- [ ] Launch dashboard (`streamlit run dashboard/streamlit_app.py --server.port 8501`)
+- [ ] Access at `http://localhost:8501`
+
 ### Prerequisites
-- Python 3.8+
-- pip (Python package manager)
+- **Python 3.8+**: Required for all dependencies
+- **pip**: Python package manager
+- **python3-venv** (recommended): For virtual environment management
+- **python3-full**: Complete Python installation with all components
 
 ### Installation
 
@@ -77,31 +88,155 @@ movie_counter_project/
    cd movie_counter_project
    ```
 
-2. **Install dependencies**:
+2. **Install system dependencies** (Ubuntu/Debian):
    ```bash
+   sudo apt update
+   sudo apt install -y python3-pip python3-venv python3-full
+   ```
+
+3. **Install Python dependencies**:
+   
+   **Option A: Using system packages (if you encounter externally-managed-environment error)**:
+   ```bash
+   pip install --break-system-packages -r requirements.txt
+   ```
+   
+   **Option B: Using virtual environment (recommended)**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
    pip install -r requirements.txt
    ```
 
-3. **Generate sample data**:
+4. **Generate sample data**:
    ```bash
    cd scripts
-   python generate_data.py
-   python data_processing.py
+   python3 generate_data.py
+   python3 data_processing.py
+   cd ..
    ```
 
-4. **Launch the dashboard**:
+5. **Test the setup**:
+   ```bash
+   cd tests
+   python3 test_basic.py
+   cd ..
+   ```
+
+6. **Launch the dashboard**:
    ```bash
    cd dashboard
-   streamlit run streamlit_app.py
+   streamlit run streamlit_app.py --server.port 8501
    ```
 
-5. **Open your browser** to `http://localhost:8501`
+7. **Open your browser** to `http://localhost:8501`
 
 ### Alternative: Jupyter Analysis
 To explore the data analysis notebooks:
 ```bash
 jupyter notebook notebooks/movie_eda.ipynb
 ```
+
+## 🔧 Troubleshooting
+
+### Common Issues and Solutions
+
+#### **1. Externally Managed Environment Error**
+**Error**: `error: externally-managed-environment`
+
+**Solution**: Use one of these approaches:
+```bash
+# Option 1: Install with system override
+pip install --break-system-packages -r requirements.txt
+
+# Option 2: Use virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### **2. Python Command Not Found**
+**Error**: `Command 'python' not found, did you mean: command 'python3'`
+
+**Solution**: Use `python3` instead of `python`:
+```bash
+python3 generate_data.py
+python3 data_processing.py
+```
+
+#### **3. Dashboard Syntax Errors**
+**Error**: `SyntaxError: unexpected character after line continuation character`
+
+**Solution**: The dashboard file has been fixed. If you encounter this:
+1. Ensure you have the latest version of `dashboard/streamlit_app.py`
+2. Check for any malformed string literals
+3. Run: `python3 -m py_compile dashboard/streamlit_app.py`
+
+#### **4. Data Files Not Found**
+**Error**: `FileNotFoundError: [Errno 2] No such file or directory`
+
+**Solution**: Ensure data generation completed successfully:
+```bash
+cd scripts
+python3 generate_data.py
+python3 data_processing.py
+cd ..
+ls -la data/processed/  # Should show CSV files
+```
+
+#### **5. Port Already in Use**
+**Error**: `Port 8501 is already in use`
+
+**Solution**: Use a different port or kill existing process:
+```bash
+# Kill existing streamlit process
+pkill -f streamlit
+
+# Or use different port
+streamlit run streamlit_app.py --server.port 8502
+```
+
+#### **6. Virtual Environment Issues**
+**Error**: `bash: venv/bin/activate: No such file or directory`
+
+**Solution**: Recreate the virtual environment:
+```bash
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Verification Steps
+
+After installation, verify everything works:
+
+1. **Check Python version**:
+   ```bash
+   python3 --version  # Should be 3.8+
+   ```
+
+2. **Verify dependencies**:
+   ```bash
+   python3 -c "import streamlit, pandas, plotly; print('All dependencies installed!')"
+   ```
+
+3. **Test data generation**:
+   ```bash
+   cd tests
+   python3 test_basic.py
+   ```
+
+4. **Check dashboard syntax**:
+   ```bash
+   python3 -m py_compile dashboard/streamlit_app.py
+   ```
+
+5. **Verify dashboard access**:
+   ```bash
+   curl -s -I http://localhost:8501 | head -1
+   # Should return: HTTP/1.1 200 OK
+   ```
 
 ## 📈 Dashboard Features
 
@@ -197,6 +332,23 @@ The project includes synthetic data generation that creates realistic movie indu
 - **Realistic Distributions**: Log-normal budget distributions, genre-based adjustments
 - **Temporal Patterns**: Release date trends, seasonal variations
 - **Market Dynamics**: Studio influences, rating correlations
+
+### Recent Fixes and Improvements
+
+#### **Dashboard Syntax Issues (Fixed)**
+- **Problem**: Malformed string literals in `dashboard/streamlit_app.py` caused syntax errors
+- **Solution**: Completely rewrote the dashboard file with proper Python syntax
+- **Status**: ✅ **RESOLVED**
+
+#### **Python Environment Issues (Addressed)**
+- **Problem**: Ubuntu's externally-managed-environment prevented pip installations
+- **Solution**: Added `--break-system-packages` flag and virtual environment options
+- **Status**: ✅ **RESOLVED**
+
+#### **Command Compatibility (Fixed)**
+- **Problem**: `python` command not available, only `python3`
+- **Solution**: Updated all documentation to use `python3` explicitly
+- **Status**: ✅ **RESOLVED**
 
 ### Testing
 Run tests to validate data processing:
