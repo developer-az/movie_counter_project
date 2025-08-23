@@ -58,8 +58,22 @@ def load_data():
         
         return movies, sales, genre_stats, studio_stats, monthly_sales
     except FileNotFoundError:
-        st.error("Data files not found. Please run the data generation scripts first.")
-        return None, None, None, None, None
+        # Try alternative path for deployment
+        try:
+            movies = pd.read_csv('data/processed/movies_processed.csv')
+            sales = pd.read_csv('data/processed/sales_processed.csv')
+            genre_stats = pd.read_csv('data/processed/genre_stats.csv')
+            studio_stats = pd.read_csv('data/processed/studio_stats.csv')
+            monthly_sales = pd.read_csv('data/processed/monthly_sales.csv')
+            
+            # Convert date columns
+            movies['release_date'] = pd.to_datetime(movies['release_date'])
+            sales['date'] = pd.to_datetime(sales['date'])
+            
+            return movies, sales, genre_stats, studio_stats, monthly_sales
+        except FileNotFoundError:
+            st.error("Data files not found. Please ensure data files are included in the repository.")
+            return None, None, None, None, None
 
 def main():
     """Main dashboard application"""
